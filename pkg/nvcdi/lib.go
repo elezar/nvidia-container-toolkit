@@ -26,6 +26,8 @@ import (
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/device"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvlib/info"
 	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvml"
+
+	"gitlab.com/nvidia/cloud-native/go-nvlib/pkg/nvpci"
 )
 
 type wrapper struct {
@@ -52,6 +54,8 @@ type nvcdilib struct {
 	class  string
 
 	infolib info.Interface
+
+	nvpcilib nvpci.Interface
 
 	mergedDeviceOptions []transform.MergedDeviceOption
 }
@@ -114,6 +118,14 @@ func New(opts ...Option) (Interface, error) {
 			l.class = "mofed"
 		}
 		lib = (*mofedlib)(l)
+	case ModeVfio:
+		if l.class == "" {
+			l.class = "pgpu"
+		}
+		if l.nvpcilib == nil {
+			l.nvpcilib = nvpci.New()
+		}
+		lib = (*vfiolib)(l)
 	default:
 		return nil, fmt.Errorf("unknown mode %q", l.mode)
 	}

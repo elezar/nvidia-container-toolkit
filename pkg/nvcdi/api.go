@@ -39,6 +39,8 @@ const (
 	// ModeCSV configures the CDI spec generator to generate a spec based on the contents of CSV
 	// mountspec files.
 	ModeCSV = "csv"
+	// ModeVfio configures the CDI spec generator to generate a VFIO spec.
+	ModeVfio = "vfio"
 )
 
 // Interface defines the API for the nvcdi package

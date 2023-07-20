@@ -155,6 +155,7 @@ func (m command) validateFlags(c *cli.Context, opts *options) error {
 	case nvcdi.ModeNvml:
 	case nvcdi.ModeWsl:
 	case nvcdi.ModeManagement:
+	case nvcdi.ModeVfio:
 	default:
 		return fmt.Errorf("invalid discovery mode: %v", opts.mode)
 	}
