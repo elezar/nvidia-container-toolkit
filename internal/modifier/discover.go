@@ -45,7 +45,11 @@ func NewModifierFromDiscoverer(logger logger.Interface, d discover.Discover) (oc
 // Modify applies the modifications required by discoverer to the incomming OCI spec.
 // These modifications are applied in-place.
 func (m discoverModifier) Modify(spec *specs.Spec) error {
-	specEdits, err := edits.NewSpecEdits(m.logger, m.discoverer)
+	e := edits.New(
+		edits.WithLogger(m.logger),
+	)
+
+	specEdits, err := e.SpecModifierFromDiscoverer(m.discoverer)
 	if err != nil {
 		return fmt.Errorf("failed to get required container edits: %v", err)
 	}
