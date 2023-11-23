@@ -19,7 +19,8 @@ package edits
 import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 
 type options struct {
-	logger logger.Interface
+	logger              logger.Interface
+	allowAdditionalGIDs bool
 }
 
 type Option func(*options)
@@ -27,5 +28,11 @@ type Option func(*options)
 func WithLogger(logger logger.Interface) Option {
 	return func(o *options) {
 		o.logger = logger
+	}
+}
+
+func WithAllowAdditionalGIDs(allowAdditionalGIDs bool) Option {
+	return func(o *options) {
+		o.allowAdditionalGIDs = allowAdditionalGIDs
 	}
 }

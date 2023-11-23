@@ -58,7 +58,7 @@ func (o *options) EditsFromDiscoverer(d discover.Discover) (*cdi.ContainerEdits,
 
 	c := NewContainerEdits()
 	for _, d := range devices {
-		edits, err := device(d).toEdits()
+		edits, err := device(d).toEdits(o.allowAdditionalGIDs)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create container edits for device: %w", err)
 		}

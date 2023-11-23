@@ -65,6 +65,8 @@ type nvcdilib struct {
 	infolib info.Interface
 
 	mergedDeviceOptions []transform.MergedDeviceOption
+
+	allowAdditionalGIDs bool
 }
 
 // New creates a new nvcdi library
@@ -196,6 +198,7 @@ func (m *wrapper) GetCommonEdits() (*cdi.ContainerEdits, error) {
 func (l *nvcdilib) editsFromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 	e := edits.New(
 		edits.WithLogger(l.logger),
+		edits.WithAllowAdditionalGIDs(l.allowAdditionalGIDs),
 	)
 	return e.EditsFromDiscoverer(d)
 }
