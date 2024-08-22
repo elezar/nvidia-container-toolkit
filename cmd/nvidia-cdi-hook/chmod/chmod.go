@@ -115,7 +115,7 @@ func (m command) run(c *cli.Context, cfg *config) error {
 
 	containerRoot, err := s.GetContainerRoot()
 	if err != nil {
-		return fmt.Errorf("failed to determined container root: %v", err)
+		return fmt.Errorf("failed to determine container root: %v", err)
 	}
 	if containerRoot == "" {
 		return fmt.Errorf("empty container root detected")

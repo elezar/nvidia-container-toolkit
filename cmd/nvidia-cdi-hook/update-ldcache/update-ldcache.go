@@ -97,12 +97,12 @@ func (m command) validateFlags(c *cli.Context, cfg *options) error {
 func (m command) run(c *cli.Context, cfg *options) error {
 	s, err := oci.LoadContainerState(cfg.containerSpec)
 	if err != nil {
-		return fmt.Errorf("failed to load container state: %v", err)
+		return fmt.Errorf("failed to load container state: %w", err)
 	}
 
 	containerRoot, err := s.GetContainerRoot()
 	if err != nil {
-		return fmt.Errorf("failed to determined container root: %v", err)
+		return fmt.Errorf("failed to determine container root: %w", err)
 	}
 
 	ldconfigPath := m.resolveLDConfigPath(cfg.ldconfigPath)
