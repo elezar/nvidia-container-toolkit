@@ -622,12 +622,15 @@ func TestDeviceListSourcePriority(t *testing.T) {
 						},
 					),
 					image.WithMounts(tc.mountDevices),
+					// TODO: Add other options for the settings below.
 				)
 				defaultConfig, _ := config.GetDefault()
 				cfg := &hookConfig{defaultConfig}
 				cfg.AcceptEnvvarUnprivileged = tc.acceptUnprivileged
 				cfg.AcceptDeviceListAsVolumeMounts = tc.acceptMounts
-				devices = cfg.getDevices(image, tc.privileged)
+
+				// TODO: Move this test to the image package and test image.VisibleDevices().
+				devices = cfg.getDevices(image)
 			}
 
 			// For all other tests, just grab the devices and check the results
@@ -638,6 +641,7 @@ func TestDeviceListSourcePriority(t *testing.T) {
 	}
 }
 
+// TODO: Move this test to the image package and test image.VisibleDevices().
 func TestGetDevicesFromEnvvar(t *testing.T) {
 	envDockerResourceGPUs := "DOCKER_RESOURCE_GPUS"
 	gpuID := "GPU-12345"

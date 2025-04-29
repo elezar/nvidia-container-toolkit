@@ -103,9 +103,9 @@ func loadSpec(path string) (spec *Spec) {
 	return
 }
 
-func isPrivileged(s *Spec) bool {
-	if s.Process.Capabilities == nil {
-		return false
+func (s *Spec) GetCapabilities() []string {
+	if s == nil || s.Process == nil || s.Process.Capabilities == nil {
+		return nil
 	}
 
 	var caps []string
@@ -118,33 +118,25 @@ func isPrivileged(s *Spec) bool {
 		if err != nil {
 			log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
 		}
-		for _, c := range caps {
-			if c == capSysAdmin {
-				return true
-			}
-		}
-		return false
+		return caps
 	}
 
 	// Otherwise, parse s.Process.Capabilities as:
 	// github.com/opencontainers/runtime-spec/blob/v1.0.0/specs-go/config.go#L30-L54
-	process := specs.Process{
-		Env: s.Process.Env,
-	}
-
-	err := json.Unmarshal(*s.Process.Capabilities, &process.Capabilities)
+	capabilities := specs.LinuxCapabilities{}
+	err := json.Unmarshal(*s.Process.Capabilities, &capabilities)
 	if err != nil {
 		log.Panicln("could not decode Process.Capabilities in OCI spec:", err)
 	}
 
-	fullSpec := specs.Spec{
-		Version: *s.Version,
-		Process: &process,
-	}
-
-	return image.IsPrivileged(&fullSpec)
+	return image.OCISpecCapabilities(capabilities).GetCapabilities()
 }
 
+func isPrivileged(s *Spec) bool {
+	return image.IsPrivileged(s)
+}
+
+// TODO: Remove this function and test image.VisibleDevices directly.
 func getDevicesFromEnvvar(containerImage image.CUDA, swarmResourceEnvvars []string) []string {
 	// We check if the image has at least one of the Swarm resource envvars defined and use this
 	// if specified.
@@ -157,28 +149,9 @@ func getDevicesFromEnvvar(containerImage image.CUDA, swarmResourceEnvvars []stri
 	return containerImage.VisibleDevicesFromEnvVar()
 }
 
-func (hookConfig *hookConfig) getDevices(image image.CUDA, privileged bool) []string {
-	// If enabled, try and get the device list from volume mounts first
-	if hookConfig.AcceptDeviceListAsVolumeMounts {
-		devices := image.VisibleDevicesFromMounts()
-		if len(devices) > 0 {
-			return devices
-		}
-	}
-
-	// Fallback to reading from the environment variable if privileges are correct
-	devices := getDevicesFromEnvvar(image, hookConfig.getSwarmResourceEnvvars())
-	if len(devices) == 0 {
-		return nil
-	}
-	if privileged || hookConfig.AcceptEnvvarUnprivileged {
-		return devices
-	}
-
-	configName := hookConfig.getConfigOption("AcceptEnvvarUnprivileged")
-	log.Printf("Ignoring devices specified in NVIDIA_VISIBLE_DEVICES (privileged=%v, %v=%v) ", privileged, configName, hookConfig.AcceptEnvvarUnprivileged)
-
-	return nil
+// TODO: Remove this function and replace references to it with image.VisibleDevices()
+func (hookConfig *hookConfig) getDevices(image image.CUDA) []string {
+	return image.VisibleDevices()
 }
 
 func getMigConfigDevices(i image.CUDA) *string {
@@ -197,6 +170,7 @@ func getMigDevices(image image.CUDA, envvar string) *string {
 	return &devices
 }
 
+// TODO: This function should use the same logic as image.VisibleDevices()
 func (hookConfig *hookConfig) getImexChannels(image image.CUDA, privileged bool) []string {
 	if hookConfig.Features.IgnoreImexChannelRequests.IsEnabled() {
 		return nil
@@ -251,7 +225,7 @@ func (hookConfig *hookConfig) getDriverCapabilities(cudaImage image.CUDA, legacy
 func (hookConfig *hookConfig) getNvidiaConfig(image image.CUDA, privileged bool) *nvidiaConfig {
 	legacyImage := image.IsLegacy()
 
-	devices := hookConfig.getDevices(image, privileged)
+	devices := image.VisibleDevices()
 	if len(devices) == 0 {
 		// empty devices means this is not a GPU container.
 		return nil
@@ -306,16 +280,21 @@ func (hookConfig *hookConfig) getContainerConfig() (config containerConfig) {
 
 	s := loadSpec(path.Join(b, "config.json"))
 
+	privileged := image.IsPrivileged(s)
+	swarmResourceEnvVars := hookConfig.getSwarmResourceEnvvars()
 	image, err := image.New(
 		image.WithEnv(s.Process.Env),
 		image.WithMounts(s.Mounts),
 		image.WithDisableRequire(hookConfig.DisableRequire),
+		image.WithPrivileged(privileged),
+		image.WithVisibleDevicesEnvVars(swarmResourceEnvVars...),
+		// TODO: Add the other options for the visible devices as valume mounts
+		// and whether envvars are respected in non-privileged containers.
 	)
 	if err != nil {
 		log.Panicln(err)
 	}
 
-	privileged := isPrivileged(s)
 	return containerConfig{
 		Pid:    h.Pid,
 		Rootfs: s.Root.Path,

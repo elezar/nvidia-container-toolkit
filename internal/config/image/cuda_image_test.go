@@ -122,7 +122,7 @@ func TestGetRequirements(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			image, err := NewCUDAImageFromEnv(tc.env)
+			image, err := newCUDAImageFromEnv(tc.env)
 			require.NoError(t, err)
 
 			requirements, err := image.GetRequirements()
@@ -224,7 +224,7 @@ func TestImexChannelsFromEnvVar(t *testing.T) {
 	for _, tc := range testCases {
 		for id, baseEnvvars := range map[string][]string{"": nil, "legacy": {"CUDA_VERSION=1.2.3"}} {
 			t.Run(tc.description+id, func(t *testing.T) {
-				i, err := NewCUDAImageFromEnv(append(baseEnvvars, tc.env...))
+				i, err := newCUDAImageFromEnv(append(baseEnvvars, tc.env...))
 				require.NoError(t, err)
 
 				channels := i.ImexChannelsFromEnvVar()

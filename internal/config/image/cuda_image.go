@@ -38,8 +38,15 @@ const (
 // a map of environment variable to values that can be used to perform lookups
 // such as requirements.
 type CUDA struct {
-	env    map[string]string
-	mounts []specs.Mount
+	env          map[string]string
+	mounts       []specs.Mount
+	annotations  map[string]string
+	isPrivileged bool
+
+	visibleDevicesEnvVars          []string
+	annotationPrefixes             []string
+	acceptDeviceListAsVolumeMounts bool
+	acceptEnvvarUnprivileged       bool
 }
 
 // NewCUDAImageFromSpec creates a CUDA image from the input OCI runtime spec.
@@ -51,14 +58,17 @@ func NewCUDAImageFromSpec(spec *specs.Spec) (CUDA, error) {
 	}
 
 	return New(
+		WithAnnotations(spec.Annotations),
 		WithEnv(env),
 		WithMounts(spec.Mounts),
+		WithPrivileged(IsPrivileged((*OCISpec)(spec))),
 	)
 }
 
-// NewCUDAImageFromEnv creates a CUDA image from the input environment. The environment
+// newCUDAImageFromEnv creates a CUDA image from the input environment. The environment
 // is a list of strings of the form ENVAR=VALUE.
-func NewCUDAImageFromEnv(env []string) (CUDA, error) {
+// This function is used for testing.
+func newCUDAImageFromEnv(env []string) (CUDA, error) {
 	return New(WithEnv(env))
 }
 
@@ -216,10 +226,38 @@ func (i CUDA) OnlyFullyQualifiedCDIDevices() bool {
 	return hasCDIdevice
 }
 
+// VisibleDevices returns the set of visible devices requested by a user either
+// as mounts or from envvars.
+func (i CUDA) VisibleDevices() []string {
+	if i.acceptDeviceListAsVolumeMounts {
+		devices := i.VisibleDevicesFromMounts()
+		if len(devices) > 0 {
+			return devices
+		}
+	}
+
+	devices := i.VisibleDevicesFromEnvVar()
+	if len(devices) == 0 {
+		return nil
+	}
+
+	if i.isPrivileged || i.acceptEnvvarUnprivileged {
+		return devices
+	}
+
+	// TODO: Should we log this here?
+	return nil
+}
+
 // VisibleDevicesFromEnvVar returns the set of visible devices requested through
 // the NVIDIA_VISIBLE_DEVICES environment variable.
 func (i CUDA) VisibleDevicesFromEnvVar() []string {
-	return i.DevicesFromEnvvars(EnvVarNvidiaVisibleDevices).List()
+	for _, envVar := range append(i.visibleDevicesEnvVars, EnvVarNvidiaVisibleDevices) {
+		if i.HasEnvvar(envVar) {
+			return i.DevicesFromEnvvars(envVar).List()
+		}
+	}
+	return nil
 }
 
 // VisibleDevicesFromMounts returns the set of visible devices requested as mounts.
@@ -269,6 +307,32 @@ func (i CUDA) DevicesFromMounts() []string {
 		devices = append(devices, device)
 	}
 	return devices
+}
+
+func (i CUDA) CDIDevices() []string {
+	// TODO: Add support for annotation devices.
+	if i.acceptDeviceListAsVolumeMounts {
+		devices := i.CDIDevicesFromMounts()
+		if len(devices) > 0 {
+			return devices
+		}
+	}
+
+	envvarDevices := i.VisibleDevicesFromEnvVar()
+	if len(envvarDevices) == 0 {
+		return nil
+	}
+
+	if !i.acceptEnvvarUnprivileged {
+		return nil
+	}
+
+	if i.isPrivileged || i.acceptEnvvarUnprivileged {
+		return devices
+	}
+
+	// TODO: Should we log this here?
+	return nil
 }
 
 // CDIDevicesFromMounts returns a list of CDI devices specified as mounts on the image.

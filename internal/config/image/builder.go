@@ -24,8 +24,7 @@ import (
 )
 
 type builder struct {
-	env            map[string]string
-	mounts         []specs.Mount
+	CUDA
 	disableRequire bool
 }
 
@@ -50,15 +49,25 @@ func (b builder) build() (CUDA, error) {
 		b.env[EnvVarNvidiaDisableRequire] = "true"
 	}
 
-	c := CUDA{
-		env:    b.env,
-		mounts: b.mounts,
-	}
-	return c, nil
+	return b.CUDA, nil
 }
 
 // Option is a functional option for creating a CUDA image.
 type Option func(*builder) error
+
+func WithAnnotationPrefixes(annotationPrefixes []string) Option {
+	return func(b *builder) error {
+		b.annotationPrefixes = annotationPrefixes
+		return nil
+	}
+}
+
+func WithAnnotations(annotations map[string]string) Option {
+	return func(b *builder) error {
+		b.annotations = annotations
+		return nil
+	}
+}
 
 // WithDisableRequire sets the disable require option.
 func WithDisableRequire(disableRequire bool) Option {
@@ -97,6 +106,22 @@ func WithEnvMap(env map[string]string) Option {
 func WithMounts(mounts []specs.Mount) Option {
 	return func(b *builder) error {
 		b.mounts = mounts
+		return nil
+	}
+}
+
+// WithPrivileged sets whether an image is privileged or not.
+func WithPrivileged(isPrivileged bool) Option {
+	return func(b *builder) error {
+		b.isPrivileged = isPrivileged
+		return nil
+	}
+}
+
+// WithVisibleDevicesEnvVars sets the environment variables to use when creating the CUDA image.
+func WithVisibleDevicesEnvVars(visibleDevicesEnvVars ...string) Option {
+	return func(b *builder) error {
+		b.visibleDevicesEnvVars = visibleDevicesEnvVars
 		return nil
 	}
 }
