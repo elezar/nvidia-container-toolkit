@@ -20,6 +20,7 @@ package ldconfig
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -40,6 +41,7 @@ const (
 type Ldconfig struct {
 	ldconfigPath string
 	inRoot       string
+	isRootless   bool
 	directories  []string
 }
 
@@ -50,6 +52,10 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 		"--ldconfig-path", strings.TrimPrefix(config.NormalizeLDConfigPath("@"+ldconfigPath), "@"),
 		"--container-root", containerRoot,
 	}
+	if os.Geteuid() != 0 {
+		args = append(args, "--rootless")
+	}
+
 	args = append(args, additionalargs...)
 
 	return createReexecCommand(args)
@@ -66,6 +72,10 @@ func NewRunner(id string, ldconfigPath string, containerRoot string, additionala
 //	--ldconfig-path=LDCONFIG_PATH	the path to ldconfig on the host
 //	--container-root=CONTAINER_ROOT	the path in which ldconfig must be run
 //
+// The following optional flags are supported:
+//
+//	--rootless	the container is a rootless container and certain operations are not supported
+//
 // The remaining args are folders where soname symlinks need to be created.
 func NewFromArgs(args ...string) (*Ldconfig, error) {
 	if len(args) < 1 {
@@ -74,6 +84,7 @@ func NewFromArgs(args ...string) (*Ldconfig, error) {
 	fs := flag.NewFlagSet(args[1], flag.ExitOnError)
 	ldconfigPath := fs.String("ldconfig-path", "", "the path to ldconfig on the host")
 	containerRoot := fs.String("container-root", "", "the path in which ldconfig must be run")
+	rootless := fs.Bool("rootless", false, "the container is a rootless container and certain operations are not supported")
 	if err := fs.Parse(args[1:]); err != nil {
 		return nil, err
 	}
@@ -88,6 +99,7 @@ func NewFromArgs(args ...string) (*Ldconfig, error) {
 	l := &Ldconfig{
 		ldconfigPath: *ldconfigPath,
 		inRoot:       *containerRoot,
+		isRootless:   *rootless,
 		directories:  fs.Args(),
 	}
 	return l, nil
@@ -154,7 +166,10 @@ func (l *Ldconfig) prepareRoot() (string, error) {
 	// To prevent leaking the parent proc filesystem, we create a new proc mount
 	// in the specified root.
 	if err := mountProc(l.inRoot); err != nil {
-		return "", fmt.Errorf("error mounting /proc: %w", err)
+		if !l.isRootless {
+			return "", fmt.Errorf("error mounting /proc: %w", err)
+		}
+		log.Printf("Ignoring error for rootless container: %v", err)
 	}
 
 	// We mount the host ldconfig before we pivot root since host paths are not
