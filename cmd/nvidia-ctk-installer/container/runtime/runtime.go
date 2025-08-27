@@ -55,6 +55,13 @@ func Flags(opts *Options) []cli.Flag {
 			Sources:     cli.EnvVars("RUNTIME_CONFIG", "CONTAINERD_CONFIG", "DOCKER_CONFIG"),
 		},
 		&cli.StringFlag{
+			Name:        "drop-in-config",
+			Usage:       "Path to the NVIDIA-specific drop-in config file",
+			Value:       runtimeSpecificDefault,
+			Destination: &opts.DropInConfig,
+			Sources:     cli.EnvVars("RUNTIME_DROP_IN_CONFIG"),
+		},
+		&cli.StringFlag{
 			Name:        "executable-path",
 			Usage:       "The path to the runtime executable. This is used to extract the current config",
 			Destination: &opts.ExecutablePath,
@@ -120,12 +127,22 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 		opts.EnableCDI = to.CDI.Enabled
 	}
 
-	if opts.ExecutablePath != "" && opts.RuntimeName == docker.Name {
-		logger.Warningf("Ignoring executable-path=%q flag for %v", opts.ExecutablePath, opts.RuntimeName)
-		opts.ExecutablePath = ""
+	switch runtime {
+	case docker.Name:
+		if opts.ExecutablePath != "" {
+			logger.Warningf("Ignoring executable-path=%q flag for %v", opts.ExecutablePath, opts.RuntimeName)
+			opts.ExecutablePath = ""
+		}
+		if opts.DropInConfig != "" && opts.DropInConfig != runtimeSpecificDefault {
+			logger.Warningf("Ignorining drop-in-config=%q flag for %v", opts.DropInConfig, opts.RuntimeName)
+			opts.DropInConfig = ""
+		}
+	case containerd.Name:
+	case crio.Name:
 	}
 
 	// Apply the runtime-specific config changes.
+	// TODO: Add the runtime-specific DropInConfigs here.
 	switch runtime {
 	case containerd.Name:
 		if opts.Config == runtimeSpecificDefault {
@@ -150,6 +167,10 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 	case docker.Name:
 		if opts.Config == runtimeSpecificDefault {
 			opts.Config = docker.DefaultConfig
+		}
+		// Docker does not support drop-in configs.
+		if opts.DropInConfig == runtimeSpecificDefault {
+			opts.DropInConfig = ""
 		}
 		if opts.Socket == runtimeSpecificDefault {
 			opts.Socket = docker.DefaultSocket
