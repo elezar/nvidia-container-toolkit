@@ -32,9 +32,10 @@ import (
 const (
 	Name = "containerd"
 
-	DefaultConfig      = "/etc/containerd/config.toml"
-	DefaultSocket      = "/run/containerd/containerd.sock"
-	DefaultRestartMode = "signal"
+	DefaultConfig       = "/etc/containerd/config.toml"
+	DefaultDropInConfig = "/etc/containerd/config.d/99-nvidia.toml"
+	DefaultSocket       = "/run/containerd/containerd.sock"
+	DefaultRestartMode  = "signal"
 
 	defaultRuntimeType = "io.containerd.runc.v2"
 )

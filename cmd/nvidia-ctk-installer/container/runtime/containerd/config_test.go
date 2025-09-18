@@ -26,6 +26,7 @@ import (
 	cli "github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 // TestContainerdConfigLifecycle tests the complete Setup->Cleanup lifecycle for both v1 and v2 configs.
@@ -128,7 +129,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -155,7 +156,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 		},
@@ -256,7 +257,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
             ShimDebug = true
             SystemdCgroup = true
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -285,7 +286,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
             ShimDebug = true
             SystemdCgroup = true
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 		},
@@ -406,7 +407,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -444,7 +445,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 		},
@@ -526,7 +527,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -553,7 +554,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
           [plugins.cri.containerd.runtimes.runc.options]
             Runtime = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 		},
@@ -581,7 +582,7 @@ func TestContainerdConfigLifecycle(t *testing.T) {
 				expected := `imports = ["` + filepath.Dir(co.DropInConfig) + `/*.toml"]
 version = 2
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -625,7 +626,7 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
 `
-				require.Equal(t, expectedDropIn, string(actualDropIn))
+				toml.RequireEqualTOML(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -695,8 +696,8 @@ version = 2
             BinaryName = "/usr/bin/runc"
 `
 
-				// TODO (follow-up): Add a function to compare toml files by contents.
-				require.Equal(t, expected, string(actual))
+				// Use semantic TOML comparison instead of string comparison
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -732,7 +733,7 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
 `
-				require.Equal(t, expectedDropIn, string(actualDropIn))
+				toml.RequireEqualTOML(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -763,7 +764,7 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.NoFileExists(t, co.DropInConfig)
 
@@ -841,7 +842,7 @@ version = 2
             BinaryName = "/usr/bin/runc"
 `
 
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -877,7 +878,7 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
 `
-				require.Equal(t, expectedDropIn, string(actualDropIn))
+				toml.RequireEqualTOML(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -907,7 +908,7 @@ version = 2
             BinaryName = "/usr/bin/runc"
 `
 
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.NoFileExists(t, co.DropInConfig)
 
@@ -1013,7 +1014,7 @@ version = 2
   [plugins."io.containerd.internal.v1.opt"]
     path = "/opt/containerd"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -1055,7 +1056,7 @@ version = 2
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
             SystemdCgroup = true
 `
-				require.Equal(t, expectedDropIn, string(actualDropIn))
+				toml.RequireEqualTOML(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -1102,7 +1103,7 @@ version = 2
   [plugins."io.containerd.internal.v1.opt"]
     path = "/opt/containerd"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.NoFileExists(t, co.DropInConfig)
 
@@ -1166,7 +1167,7 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -1202,7 +1203,7 @@ version = 2
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
 `
 
-				require.Equal(t, expectedDropIn, string(actualDropIn))
+				toml.RequireEqualTOML(t, expectedDropIn, string(actualDropIn))
 
 				return nil
 			},
@@ -1229,7 +1230,7 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.NoFileExists(t, co.DropInConfig)
 
@@ -1294,7 +1295,7 @@ version = 2
             BinaryName = "/usr/bin/runc"
 `
 
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -1330,7 +1331,7 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
 `
-				require.Equal(t, expectedDropIn, string(actualDropIn))
+				toml.RequireEqualTOML(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -1357,7 +1358,7 @@ version = 2
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.NoFileExists(t, co.DropInConfig)
 
@@ -1421,7 +1422,7 @@ version = 3
           [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -1456,7 +1457,7 @@ version = 3
           [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia-legacy.options]
             BinaryName = "/usr/bin/nvidia-container-runtime.legacy"
 `
-				require.Equal(t, expectedDropIn, string(actualDropIn))
+				toml.RequireEqualTOML(t, expectedDropIn, string(actualDropIn))
 
 				return nil
 			},
@@ -1484,7 +1485,7 @@ version = 3
           [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
             BinaryName = "/usr/bin/runc"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.NoFileExists(t, co.DropInConfig)
 
@@ -1556,7 +1557,7 @@ version = 3
             Root = "/run/containerd/runc"
             SystemdCgroup = true
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -1601,7 +1602,7 @@ version = 3
             Root = "/run/containerd/runc"
             SystemdCgroup = true
 `
-				require.Equal(t, expectedDropIn, string(actualDropIn))
+				toml.RequireEqualTOML(t, expectedDropIn, string(actualDropIn))
 
 				return nil
 			},
@@ -1633,7 +1634,7 @@ version = 3
             Root = "/run/containerd/runc"
             SystemdCgroup = true
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.NoFileExists(t, co.DropInConfig)
 
@@ -1642,10 +1643,8 @@ version = 3
 		},
 	}
 
-	for i, tc := range testCases {
-		if i > 1 {
-			t.SkipNow()
-		}
+	for _, tc := range testCases {
+
 		t.Run(tc.description, func(t *testing.T) {
 			// Create a temporary directory for the test
 			testRoot := t.TempDir()

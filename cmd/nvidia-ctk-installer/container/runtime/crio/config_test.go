@@ -26,6 +26,7 @@ import (
 	cli "github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/nvidia-container-toolkit/cmd/nvidia-ctk-installer/container"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/config/toml"
 )
 
 // TestCrioConfigLifecycle tests the complete Setup->Cleanup lifecycle for both config and hook modes
@@ -83,7 +84,7 @@ func TestCrioConfigLifecycle(t *testing.T) {
         runtime_path = "/usr/bin/nvidia-container-runtime.legacy"
         runtime_type = "oci"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, _ *Options) error {
@@ -145,7 +146,7 @@ monitor_path = "/usr/libexec/crio/conmon"
 signature_policy = "/etc/crio/policy.json"
 `
 
-				require.Equal(t, expectedTopLevel, string(actualTopLevel))
+				toml.RequireEqualTOML(t, expectedTopLevel, string(actualTopLevel))
 
 				require.FileExists(t, co.DropInConfig)
 				actual, err := os.ReadFile(co.DropInConfig)
@@ -176,7 +177,7 @@ signature_policy = "/etc/crio/policy.json"
         runtime_root = "/run/crun"
         runtime_type = "oci"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -201,7 +202,7 @@ monitor_path = "/usr/libexec/crio/conmon"
 [crio.image]
 signature_policy = "/etc/crio/policy.json"
 `
-				require.Equal(t, expectedTopLevel, string(actualTopLevel))
+				toml.RequireEqualTOML(t, expectedTopLevel, string(actualTopLevel))
 
 				return nil
 			},
@@ -259,7 +260,7 @@ runtime_path = "/old/path/nvidia-container-runtime"
 runtime_type = "oci"
 `
 
-				require.Equal(t, expectedTopLevel, string(actualTopLevel))
+				toml.RequireEqualTOML(t, expectedTopLevel, string(actualTopLevel))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -286,7 +287,7 @@ runtime_type = "oci"
         runtime_path = "/usr/bin/nvidia-container-runtime.legacy"
         runtime_type = "oci"
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -310,7 +311,7 @@ runtime_path = "/old/path/nvidia-container-runtime"
 runtime_type = "oci"
 `
 
-				require.Equal(t, expectedTopLevel, string(actualTopLevel))
+				toml.RequireEqualTOML(t, expectedTopLevel, string(actualTopLevel))
 
 				require.NoFileExists(t, co.DropInConfig)
 
@@ -405,7 +406,7 @@ plugin_dirs = [
   "/usr/libexec/cni"
 ]
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.FileExists(t, co.DropInConfig)
 
@@ -437,7 +438,7 @@ plugin_dirs = [
         runtime_root = "/run/crun"
         runtime_type = "oci"
 `
-				require.Equal(t, expectedDropIn, string(actualDropIn))
+				toml.RequireEqualTOML(t, expectedDropIn, string(actualDropIn))
 				return nil
 			},
 			assertCleanupPostConditions: func(t *testing.T, co *container.Options, o *Options) error {
@@ -478,7 +479,7 @@ plugin_dirs = [
   "/usr/libexec/cni"
 ]
 `
-				require.Equal(t, expected, string(actual))
+				toml.RequireEqualTOML(t, expected, string(actual))
 
 				require.NoFileExists(t, co.DropInConfig)
 
@@ -621,10 +622,8 @@ plugin_dirs = [
 		},
 	}
 
-	for i, tc := range testCases {
-		if i > 3 {
-			t.SkipNow()
-		}
+	for _, tc := range testCases {
+
 		t.Run(tc.description, func(t *testing.T) {
 			// Update any paths as required
 			testRoot := t.TempDir()

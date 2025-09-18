@@ -42,9 +42,10 @@ const (
 	defaultHookFilename = "oci-nvidia-hook.json"
 
 	// Config-based settings
-	DefaultConfig      = "/etc/crio/crio.conf"
-	DefaultSocket      = "/var/run/crio/crio.sock"
-	DefaultRestartMode = "systemd"
+	DefaultConfig       = "/etc/crio/crio.conf"
+	DefaultDropInConfig = "/etc/crio/conf.d/99-nvidia.toml"
+	DefaultSocket       = "/var/run/crio/crio.sock"
+	DefaultRestartMode  = "systemd"
 )
 
 // Options defines the cri-o specific options.

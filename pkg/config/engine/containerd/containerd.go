@@ -80,7 +80,7 @@ func New(opts ...Option) (engine.Interface, error) {
 		b.logger = logger.New()
 	}
 	if b.configSource == nil {
-		b.configSource = toml.FromFile(b.path)
+		b.configSource = toml.FromFile(b.topLevelConfigPath)
 	}
 
 	sourceConfig, err := b.configSource.Load()
@@ -113,7 +113,6 @@ func New(opts ...Option) (engine.Interface, error) {
 		}
 		return (*ConfigV1)(cfg), nil
 	default:
-
 		cfg := &WithTopLevel{
 			Interface: &engine.DropInConfig{
 				Source: &Config{
@@ -136,11 +135,10 @@ func New(opts ...Option) (engine.Interface, error) {
 				},
 			},
 			topLevelConfig: &topLevelConfig{
-				// TODO: It should be clearer that b.path is the top-level config.
-				filename: b.path,
+				filename: b.topLevelConfigPath,
 				config: &Config{
 					Tree: func() *toml.Tree {
-						t, _ := toml.FromFile(b.path).Load()
+						t, _ := toml.FromFile(b.topLevelConfigPath).Load()
 						return t
 					}(),
 					Version:              configVersion,

@@ -127,22 +127,18 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 		opts.EnableCDI = to.CDI.Enabled
 	}
 
-	switch runtime {
-	case docker.Name:
+	if runtime == docker.Name {
 		if opts.ExecutablePath != "" {
 			logger.Warningf("Ignoring executable-path=%q flag for %v", opts.ExecutablePath, opts.RuntimeName)
 			opts.ExecutablePath = ""
 		}
 		if opts.DropInConfig != "" && opts.DropInConfig != runtimeSpecificDefault {
-			logger.Warningf("Ignorining drop-in-config=%q flag for %v", opts.DropInConfig, opts.RuntimeName)
+			logger.Warningf("Ignoring drop-in-config=%q flag for %v", opts.DropInConfig, opts.RuntimeName)
 			opts.DropInConfig = ""
 		}
-	case containerd.Name:
-	case crio.Name:
 	}
 
 	// Apply the runtime-specific config changes.
-	// TODO: Add the runtime-specific DropInConfigs here.
 	switch runtime {
 	case containerd.Name:
 		if opts.Config == runtimeSpecificDefault {
@@ -154,6 +150,9 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 		if opts.RestartMode == runtimeSpecificDefault {
 			opts.RestartMode = containerd.DefaultRestartMode
 		}
+		if opts.DropInConfig == runtimeSpecificDefault {
+			opts.DropInConfig = containerd.DefaultDropInConfig
+		}
 	case crio.Name:
 		if opts.Config == runtimeSpecificDefault {
 			opts.Config = crio.DefaultConfig
@@ -163,6 +162,9 @@ func (opts *Options) Validate(logger logger.Interface, c *cli.Command, runtime s
 		}
 		if opts.RestartMode == runtimeSpecificDefault {
 			opts.RestartMode = crio.DefaultRestartMode
+		}
+		if opts.DropInConfig == runtimeSpecificDefault {
+			opts.DropInConfig = crio.DefaultDropInConfig
 		}
 	case docker.Name:
 		if opts.Config == runtimeSpecificDefault {
