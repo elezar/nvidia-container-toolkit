@@ -27,6 +27,8 @@ type Mode string
 const (
 	// ModeAuto configures the CDI spec generator to automatically detect the system configuration
 	ModeAuto = Mode("auto")
+	// ModeDisabled explicitly disables all CDI spec generation.
+	ModeDisabled = Mode("disabled")
 	// ModeNvml configures the CDI spec generator to use the NVML library.
 	ModeNvml = Mode("nvml")
 	// ModeWsl configures the CDI spec generator to generate a WSL spec.
@@ -65,6 +67,7 @@ func getModes() modes {
 		all := []Mode{
 			ModeAuto,
 			ModeCSV,
+			ModeDisabled,
 			ModeGdrcopy,
 			ModeGds,
 			ModeImex,

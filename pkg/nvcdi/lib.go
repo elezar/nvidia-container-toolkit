@@ -75,6 +75,15 @@ func New(opts ...Option) (Interface, error) {
 	if l.logger == nil {
 		l.logger = logger.New()
 	}
+	if l.mode == ModeDisabled {
+		w := &wrapper{
+			factory:             &disabled{logger: l.logger},
+			vendor:              l.vendor,
+			class:               l.class,
+			mergedDeviceOptions: l.mergedDeviceOptions,
+		}
+		return w, nil
+	}
 	if len(l.deviceNamers) == 0 {
 		indexNamer, _ := NewDeviceNamer(DeviceNameStrategyIndex)
 		l.deviceNamers = []DeviceNamer{indexNamer}
