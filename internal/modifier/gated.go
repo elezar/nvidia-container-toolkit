@@ -36,18 +36,12 @@ import (
 //	NVIDIA_GDRCOPY=enabled
 //
 // If not devices are selected, no changes are made.
-func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, driver *root.Driver, hookCreator discover.HookCreator) (oci.SpecModifier, error) {
+func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image image.CUDA, driver *root.Driver, discovererFactory *discover.Factory) (oci.SpecModifier, error) {
 	if devices := image.VisibleDevices(); len(devices) == 0 {
 		logger.Infof("No modification required; no devices requested")
 		return nil, nil
 	}
 
-	discovererFactory := discover.NewFactory(
-		discover.WithLogger(logger),
-		discover.WithHookCreator(hookCreator),
-		discover.WithDriver(driver),
-		discover.WithDevRoot(cfg.NVIDIAContainerCLIConfig.Root),
-	)
 	var discoverers []discover.Discover
 
 	if image.Getenv("NVIDIA_GDS") == "enabled" {
@@ -84,7 +78,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 
 	// If the feature flag has explicitly been toggled, we don't make any modification.
 	if !cfg.Features.DisableCUDACompatLibHook.IsEnabled() {
-		cudaCompatDiscoverer, err := getCudaCompatModeDiscoverer(logger, cfg, driver, discovererFactory)
+		cudaCompatDiscoverer, err := getCudaCompatModeDiscoverer(cfg, driver, discovererFactory)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CUDA Compat discoverer: %w", err)
 		}
@@ -94,7 +88,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	return NewModifierFromDiscoverer(logger, discover.Merge(discoverers...))
 }
 
-func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, driver *root.Driver, discovererFactory *discover.Factory) (discover.Discover, error) {
+func getCudaCompatModeDiscoverer(cfg *config.Config, driver *root.Driver, discovererFactory *discover.Factory) (discover.Discover, error) {
 	// We don't support the enable-cuda-compat hook in CSV mode.
 	if cfg.NVIDIAContainerRuntimeConfig.Mode == "csv" {
 		return nil, nil

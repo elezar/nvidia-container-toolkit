@@ -18,9 +18,12 @@
 package tegra
 
 import (
+	"fmt"
+
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
+	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup/symlinks"
 )
 
 type options struct {
@@ -31,6 +34,8 @@ type options struct {
 	ldconfigPath       string
 	librarySearchPaths []string
 
+	discovererFactory *discover.Factory
+
 	// The following can be overridden for testing
 	symlinkLocator      lookup.Locator
 	symlinkChainLocator lookup.Locator
@@ -38,6 +43,41 @@ type options struct {
 	resolveSymlink func(string) (string, error)
 
 	mountSpecs MountSpecPathsByTyper
+}
+
+func new(opts ...Option) (*options, error) {
+	o := &options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+	if o.discovererFactory == nil {
+		return nil, fmt.Errorf("discoverer factory not set")
+	}
+
+	if o.devRoot == "" {
+		o.devRoot = o.driverRoot
+	}
+
+	if o.symlinkLocator == nil {
+		o.symlinkLocator = lookup.NewSymlinkLocator(
+			lookup.WithLogger(o.logger),
+			lookup.WithRoot(o.driverRoot),
+			lookup.WithSearchPaths(append(o.librarySearchPaths, "/")...),
+		)
+	}
+
+	if o.symlinkChainLocator == nil {
+		o.symlinkChainLocator = lookup.NewSymlinkChainLocator(
+			lookup.WithLogger(o.logger),
+			lookup.WithRoot(o.driverRoot),
+		)
+	}
+
+	if o.resolveSymlink == nil {
+		o.resolveSymlink = symlinks.Resolve
+	}
+
+	return o, nil
 }
 
 // Option defines a functional option for configuring a Tegra discoverer.
@@ -62,6 +102,12 @@ func WithDriverRoot(driverRoot string) Option {
 func WithDevRoot(devRoot string) Option {
 	return func(o *options) {
 		o.devRoot = devRoot
+	}
+}
+
+func WithDiscovererFactory(discovererFactory *discover.Factory) Option {
+	return func(o *options) {
+		o.discovererFactory = discovererFactory
 	}
 }
 

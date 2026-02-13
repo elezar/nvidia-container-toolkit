@@ -71,7 +71,7 @@ func TestNewNvmlDGPUDiscoverer(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			o, _ := new(
 				WithLogger(logger),
-				WithDiscovererFactory(discover.NewFactory(discover.WithLogger(logger))),
+				WithDiscovererFactory(discover.NewFactory()),
 			)
 
 			device, err := devicelib.NewDevice(tc.device)

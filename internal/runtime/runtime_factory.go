@@ -79,6 +79,13 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 	}
 
 	hookCreator := discover.NewHookCreator(discover.WithNVIDIACDIHookPath(cfg.NVIDIACTKConfig.Path))
+	discovererFactory := discover.NewFactory(
+		discover.WithLogger(logger),
+		discover.WithHookCreator(hookCreator),
+		discover.WithDriver(driver),
+		// TODO :This should be set at a driver level.
+		discover.WithDevRoot(cfg.NVIDIAContainerCLIConfig.Root),
+	)
 
 	var modifiers modifier.List
 	for _, modifierType := range supportedModifierTypes(mode) {
@@ -88,13 +95,13 @@ func newSpecModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Sp
 		case "nvidia-hook-remover":
 			modifiers = append(modifiers, modifier.NewNvidiaContainerRuntimeHookRemover(logger))
 		case "graphics":
-			graphicsModifier, err := modifier.NewGraphicsModifier(logger, cfg, *image, driver, hookCreator)
+			graphicsModifier, err := modifier.NewGraphicsModifier(logger, *image, driver, discovererFactory)
 			if err != nil {
 				return nil, err
 			}
 			modifiers = append(modifiers, graphicsModifier)
 		case "feature-gated":
-			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, *image, driver, hookCreator)
+			featureGatedModifier, err := modifier.NewFeatureGatedModifier(logger, cfg, *image, driver, discovererFactory)
 			if err != nil {
 				return nil, err
 			}

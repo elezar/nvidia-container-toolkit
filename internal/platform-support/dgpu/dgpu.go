@@ -113,12 +113,11 @@ func new(opts ...Option) (*options, error) {
 	for _, opt := range opts {
 		opt(o)
 	}
-
-	if o.logger == nil {
-		o.logger = logger.New()
-	}
 	if o.discovererFactory == nil {
 		return nil, fmt.Errorf("discover factory not specified")
+	}
+	if o.logger == nil {
+		o.logger = logger.New()
 	}
 
 	if o.migCaps == nil {

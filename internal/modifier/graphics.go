@@ -19,7 +19,6 @@ package modifier
 import (
 	"fmt"
 
-	"github.com/NVIDIA/nvidia-container-toolkit/api/config/v1"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/config/image"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/discover"
 	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
@@ -29,25 +28,19 @@ import (
 
 // NewGraphicsModifier constructs a modifier that injects graphics-related modifications into an OCI runtime specification.
 // The value of the NVIDIA_DRIVER_CAPABILITIES environment variable is checked to determine if this modification should be made.
-func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, container image.CUDA, driver *root.Driver, hookCreator discover.HookCreator) (oci.SpecModifier, error) {
+func NewGraphicsModifier(logger logger.Interface, container image.CUDA, driver *root.Driver, discovererFactory *discover.Factory) (oci.SpecModifier, error) {
 	devices, reason := requiresGraphicsModifier(container)
 	if len(devices) == 0 {
 		logger.Infof("No graphics modifier required; %v", reason)
 		return nil, nil
 	}
 
-	f := discover.NewFactory(
-		discover.WithLogger(logger),
-		discover.WithHookCreator(hookCreator),
-		discover.WithDriver(driver),
-	)
-
-	mounts, err := f.NewGraphicsMountsDiscoverer()
+	mounts, err := discovererFactory.NewGraphicsMountsDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
 	}
 
-	drmNodes, err := f.NewDRMNodesDiscoverer(
+	drmNodes, err := discovererFactory.NewDRMNodesDiscoverer(
 		image.NewVisibleDevices(devices...),
 	)
 	if err != nil {
