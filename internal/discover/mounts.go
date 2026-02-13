@@ -53,6 +53,26 @@ func (f *Factory) newMounts(lookup lookup.Locator, root string, required []strin
 	}
 }
 
+// locateAll returns all resolved patterns.
+// These are treated as mounts.
+func (d *mounts) locateAll(patterns ...string) []string {
+	var allCandidates []string
+	for _, pattern := range patterns {
+		candidates, err := d.lookup.Locate(pattern)
+		if err != nil {
+			d.logger.Warningf("Could not locate %v: %v", pattern, err)
+			continue
+		}
+		if len(candidates) == 0 {
+			d.logger.Warningf("Missing %v", pattern)
+			continue
+		}
+		d.logger.Debugf("Located %v as %v", pattern, candidates)
+		allCandidates = append(allCandidates, candidates...)
+	}
+	return allCandidates
+}
+
 func (d *mounts) Mounts() ([]Mount, error) {
 	if d.lookup == nil {
 		return nil, fmt.Errorf("no lookup defined")
@@ -60,47 +80,37 @@ func (d *mounts) Mounts() ([]Mount, error) {
 
 	var mounts []Mount
 	seen := make(map[string]bool)
-	for _, candidate := range d.required {
-		d.logger.Debugf("Locating %v", candidate)
-		located, err := d.lookup.Locate(candidate)
-		if err != nil {
-			d.logger.Warningf("Could not locate %v: %v", candidate, err)
+	for _, candidate := range d.locateAll(d.required...) {
+		if seen[candidate] {
+			d.logger.Debugf("Skipping duplicate mount %v", candidate)
 			continue
 		}
-		if len(located) == 0 {
-			d.logger.Warningf("Missing %v", candidate)
-			continue
-		}
-		d.logger.Debugf("Located %v as %v", candidate, located)
-		for _, p := range located {
-			if seen[p] {
-				d.logger.Debugf("Skipping duplicate mount %v", p)
-				continue
-			}
-
-			r := d.relativeTo(p)
-			if r == "" {
-				r = p
-			}
-
-			d.logger.Infof("Selecting %v as %v", p, r)
-			mount := Mount{
-				HostPath: p,
-				Path:     r,
-				Options: []string{
-					"ro",
-					"nosuid",
-					"nodev",
-					"rbind",
-					"rprivate",
-				},
-			}
-			mounts = append(mounts, mount)
-			seen[p] = true
-		}
+		seen[candidate] = true
+		mounts = append(mounts, d.newMount(candidate))
 	}
 
 	return mounts, nil
+}
+
+func (d *mounts) newMount(path string) Mount {
+	containerPath := d.relativeTo(path)
+	if containerPath == "" {
+		containerPath = path
+	}
+
+	d.logger.Infof("Selecting %v as %v", path, containerPath)
+	mount := Mount{
+		HostPath: path,
+		Path:     containerPath,
+		Options: []string{
+			"ro",
+			"nosuid",
+			"nodev",
+			"rbind",
+			"rprivate",
+		},
+	}
+	return mount
 }
 
 // relativeTo returns the path relative to the root for the file locator
