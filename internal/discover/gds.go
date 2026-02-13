@@ -29,32 +29,26 @@ type gdsDeviceDiscoverer struct {
 }
 
 // NewGDSDiscoverer creates a discoverer for GPUDirect Storage devices and mounts.
-func NewGDSDiscoverer(logger logger.Interface, driverRoot string, devRoot string) (Discover, error) {
-	devices := NewCharDeviceDiscoverer(
-		logger,
-		devRoot,
+func (f *Factory) NewGDSDiscoverer() (Discover, error) {
+	devices := f.NewCharDeviceDiscoverer(
 		[]string{"/dev/nvidia-fs*"},
 	)
 
-	udev := NewMounts(
-		logger,
-		lookup.NewDirectoryLocator(lookup.WithLogger(logger), lookup.WithRoot(driverRoot)),
-		driverRoot,
+	udev := f.NewMounts(
+		lookup.NewDirectoryLocator(lookup.WithLogger(f.logger), lookup.WithRoot(f.root)),
 		[]string{"/run/udev"},
 	)
 
-	cufile := NewMounts(
-		logger,
+	cufile := f.NewMounts(
 		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
-			lookup.WithRoot(driverRoot),
+			lookup.WithLogger(f.logger),
+			lookup.WithRoot(f.root),
 		),
-		driverRoot,
 		[]string{"/etc/cufile.json"},
 	)
 
 	d := gdsDeviceDiscoverer{
-		logger:  logger,
+		logger:  f.logger,
 		devices: devices,
 		mounts:  Merge(udev, cufile),
 	}

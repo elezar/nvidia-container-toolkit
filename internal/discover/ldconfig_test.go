@@ -120,7 +120,11 @@ func TestLDCacheUpdateHook(t *testing.T) {
 					return tc.mounts, tc.mountError
 				},
 			}
-			d, err := NewLDCacheUpdateHook(logger, mountMock, hookCreator, tc.ldconfigPath)
+			f := NewFactory(
+				WithLogger(logger),
+				WithHookCreator(hookCreator),
+			)
+			d, err := f.NewLDCacheUpdateHook(tc.ldconfigPath, mountMock)
 			require.NoError(t, err)
 
 			hooks, err := d.Hooks()

@@ -28,6 +28,8 @@ type options struct {
 	devRoot     string
 	hookCreator discover.HookCreator
 
+	discovererFactory *discover.Factory
+
 	isMigDevice bool
 	// migCaps stores the MIG capabilities for the system.
 	// If MIG is not available, this is nil.
@@ -43,6 +45,12 @@ type Option func(*options)
 func WithDevRoot(root string) Option {
 	return func(l *options) {
 		l.devRoot = root
+	}
+}
+
+func WithDiscovererFactory(discovererFactory *discover.Factory) Option {
+	return func(o *options) {
+		o.discovererFactory = discovererFactory
 	}
 }
 

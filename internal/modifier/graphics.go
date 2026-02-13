@@ -36,22 +36,19 @@ func NewGraphicsModifier(logger logger.Interface, cfg *config.Config, container 
 		return nil, nil
 	}
 
-	mounts, err := discover.NewGraphicsMountsDiscoverer(
-		logger,
-		driver,
-		hookCreator,
+	f := discover.NewFactory(
+		discover.WithLogger(logger),
+		discover.WithHookCreator(hookCreator),
+		discover.WithDriver(driver),
 	)
+
+	mounts, err := f.NewGraphicsMountsDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mounts discoverer: %v", err)
 	}
 
-	// In standard usage, the devRoot is the same as the driver.Root.
-	devRoot := driver.Root
-	drmNodes, err := discover.NewDRMNodesDiscoverer(
-		logger,
+	drmNodes, err := f.NewDRMNodesDiscoverer(
 		image.NewVisibleDevices(devices...),
-		devRoot,
-		hookCreator,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer: %v", err)

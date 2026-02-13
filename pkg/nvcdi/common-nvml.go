@@ -27,7 +27,7 @@ import (
 func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
 	metaDevices := l.controlDeviceNodeDiscoverer()
 
-	graphicsMounts, err := discover.NewGraphicsMountsDiscoverer(l.logger, l.driver, l.hookCreator)
+	graphicsMounts, err := l.discovererFactory.NewGraphicsMountsDiscoverer()
 	if err != nil {
 		l.logger.Warningf("failed to create discoverer for graphics mounts: %v", err)
 	}
@@ -47,9 +47,7 @@ func (l *nvmllib) newCommonNVMLDiscoverer() (discover.Discover, error) {
 }
 
 func (l *nvmllib) controlDeviceNodeDiscoverer() discover.Discover {
-	return discover.NewCharDeviceDiscoverer(
-		l.logger,
-		l.devRoot,
+	return l.discovererFactory.NewCharDeviceDiscoverer(
 		[]string{
 			"/dev/nvidia-modeset",
 			"/dev/nvidia-uvm-tools",

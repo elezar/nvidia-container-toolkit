@@ -196,7 +196,15 @@ func TestDiscovererFromCSVFiles(t *testing.T) {
 				),
 			}
 
-			d, err := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
+			// TODO: This duplicates the initialisation of this before calling o.newDiscovererFromMountSpecs
+			discovererFactory := discover.NewFactory(
+				discover.WithLogger(o.logger),
+				discover.WithRoot(o.driverRoot),
+				discover.WithDevRoot(o.devRoot),
+				discover.WithHookCreator(o.hookCreator),
+			)
+
+			d, err := o.newDiscovererFromMountSpecs(discovererFactory, o.mountSpecs.MountSpecPathsByType())
 			require.ErrorIs(t, err, tc.expectedError)
 
 			hooks, err := d.Hooks()

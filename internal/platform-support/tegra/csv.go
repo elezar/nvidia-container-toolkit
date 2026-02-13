@@ -26,22 +26,18 @@ import (
 )
 
 // newDiscovererFromMountSpecs creates a discoverer for the specified mount specs.
-func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType) (discover.Discover, error) {
+func (o options) newDiscovererFromMountSpecs(discovererFactory *discover.Factory, targetsByType MountSpecPathsByType) (discover.Discover, error) {
 	if len(targetsByType) == 0 {
 		o.logger.Warningf("No mount specs specified")
 		return discover.None{}, nil
 	}
 
-	devices := discover.NewCharDeviceDiscoverer(
-		o.logger,
-		o.devRoot,
+	devices := discovererFactory.NewCharDeviceDiscoverer(
 		targetsByType[csv.MountSpecDev],
 	)
 
-	directories := discover.NewMounts(
-		o.logger,
+	directories := discovererFactory.NewMounts(
 		lookup.NewDirectoryLocator(lookup.WithLogger(o.logger), lookup.WithRoot(o.driverRoot)),
-		o.driverRoot,
 		targetsByType[csv.MountSpecDir],
 	)
 
@@ -49,10 +45,8 @@ func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType)
 	// symlinks for the driver.
 	libraries := discover.WithDriverDotSoSymlinks(
 		o.logger,
-		discover.NewMounts(
-			o.logger,
+		discovererFactory.NewMounts(
 			o.symlinkLocator,
-			o.driverRoot,
 			targetsByType[csv.MountSpecLib],
 		),
 		"",
@@ -60,10 +54,8 @@ func (o options) newDiscovererFromMountSpecs(targetsByType MountSpecPathsByType)
 	)
 
 	// We process the explicitly requested symlinks.
-	symlinks := discover.NewMounts(
-		o.logger,
+	symlinks := discovererFactory.NewMounts(
 		o.symlinkLocator,
-		o.driverRoot,
 		targetsByType[csv.MountSpecSym],
 	)
 	createSymlinks := o.createCSVSymlinkHooks(targetsByType[csv.MountSpecSym])

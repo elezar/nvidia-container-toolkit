@@ -58,9 +58,10 @@ type nvcdilib struct {
 
 	featureFlags map[FeatureFlag]bool
 
-	disabledHooks []discover.HookName
-	enabledHooks  []discover.HookName
-	hookCreator   discover.HookCreator
+	disabledHooks     []discover.HookName
+	enabledHooks      []discover.HookName
+	hookCreator       discover.HookCreator
+	discovererFactory *discover.Factory
 }
 
 // New creates a new nvcdi library
@@ -149,6 +150,12 @@ func New(opts ...Option) (Interface, error) {
 		discover.WithNVIDIACDIHookPath(l.nvidiaCDIHookPath),
 		discover.WithDisabledHooks(l.disabledHooks...),
 		discover.WithEnabledHooks(l.enabledHooks...),
+	)
+	// create the discover factory
+	l.discovererFactory = discover.NewFactory(
+		discover.WithLogger(l.logger),
+		discover.WithHookCreator(l.hookCreator),
+		discover.WithDriver(l.driver),
 	)
 
 	w := wrapper{

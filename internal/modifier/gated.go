@@ -42,13 +42,16 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 		return nil, nil
 	}
 
+	discovererFactory := discover.NewFactory(
+		discover.WithLogger(logger),
+		discover.WithHookCreator(hookCreator),
+		discover.WithDriver(driver),
+		discover.WithDevRoot(cfg.NVIDIAContainerCLIConfig.Root),
+	)
 	var discoverers []discover.Discover
 
-	driverRoot := cfg.NVIDIAContainerCLIConfig.Root
-	devRoot := cfg.NVIDIAContainerCLIConfig.Root
-
 	if image.Getenv("NVIDIA_GDS") == "enabled" {
-		d, err := discover.NewGDSDiscoverer(logger, driverRoot, devRoot)
+		d, err := discovererFactory.NewGDSDiscoverer()
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDS devices: %w", err)
 		}
@@ -56,7 +59,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	}
 
 	if image.Getenv("NVIDIA_MOFED") == "enabled" {
-		d, err := discover.NewMOFEDDiscoverer(logger, devRoot)
+		d, err := discovererFactory.NewMOFEDDiscoverer()
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for MOFED devices: %w", err)
 		}
@@ -64,7 +67,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	}
 
 	if image.Getenv("NVIDIA_NVSWITCH") == "enabled" {
-		d, err := discover.NewNvSwitchDiscoverer(logger, devRoot)
+		d, err := discovererFactory.NewNvSwitchDiscoverer()
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for NVSWITCH devices: %w", err)
 		}
@@ -72,7 +75,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	}
 
 	if image.Getenv("NVIDIA_GDRCOPY") == "enabled" {
-		d, err := discover.NewGDRCopyDiscoverer(logger, devRoot)
+		d, err := discovererFactory.NewGDRCopyDiscoverer()
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct discoverer for GDRCopy devices: %w", err)
 		}
@@ -81,7 +84,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 
 	// If the feature flag has explicitly been toggled, we don't make any modification.
 	if !cfg.Features.DisableCUDACompatLibHook.IsEnabled() {
-		cudaCompatDiscoverer, err := getCudaCompatModeDiscoverer(logger, cfg, driver, hookCreator)
+		cudaCompatDiscoverer, err := getCudaCompatModeDiscoverer(logger, cfg, driver, discovererFactory)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct CUDA Compat discoverer: %w", err)
 		}
@@ -91,7 +94,7 @@ func NewFeatureGatedModifier(logger logger.Interface, cfg *config.Config, image 
 	return NewModifierFromDiscoverer(logger, discover.Merge(discoverers...))
 }
 
-func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, driver *root.Driver, hookCreator discover.HookCreator) (discover.Discover, error) {
+func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, driver *root.Driver, discovererFactory *discover.Factory) (discover.Discover, error) {
 	// We don't support the enable-cuda-compat hook in CSV mode.
 	if cfg.NVIDIAContainerRuntimeConfig.Mode == "csv" {
 		return nil, nil
@@ -107,7 +110,7 @@ func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, dr
 		return nil, fmt.Errorf("failed to get driver version: %w", err)
 	}
 
-	compatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(logger, hookCreator, version, "")
+	compatLibHookDiscoverer := discovererFactory.NewCUDACompatHookDiscoverer(version, "")
 	// For non-legacy modes we return the hook as is. These modes *should* already include the update-ldcache hook.
 	if cfg.NVIDIAContainerRuntimeConfig.Mode != "legacy" {
 		return compatLibHookDiscoverer, nil
@@ -115,11 +118,9 @@ func getCudaCompatModeDiscoverer(logger logger.Interface, cfg *config.Config, dr
 
 	// For legacy mode, we also need to inject a hook to update the LDCache
 	// after we have modifed the configuration.
-	ldcacheUpdateHookDiscoverer, err := discover.NewLDCacheUpdateHook(
-		logger,
-		discover.None{},
-		hookCreator,
+	ldcacheUpdateHookDiscoverer, err := discovererFactory.NewLDCacheUpdateHook(
 		"",
+		discover.None{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct ldcache update discoverer: %w", err)

@@ -52,17 +52,17 @@ func (l *nvcdilib) newDriverVersionDiscoverer() (discover.Discover, error) {
 		return nil, fmt.Errorf("failed to create discoverer for driver libraries: %v", err)
 	}
 
-	ipcs, err := discover.NewIPCDiscoverer(l.logger, l.driver.Root)
+	ipcs, err := l.discovererFactory.NewIPCDiscoverer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for IPC sockets: %v", err)
 	}
 
-	firmwares, err := NewDriverFirmwareDiscoverer(l.logger, l.driver.Root, version)
+	firmwares, err := l.newDriverFirmwareDiscoverer(version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for GSP firmware: %v", err)
 	}
 
-	binaries := NewDriverBinariesDiscoverer(l.logger, l.driver.Root)
+	binaries := l.NewDriverBinariesDiscoverer()
 
 	d := discover.Merge(
 		libraries,
@@ -101,10 +101,10 @@ func (l *nvcdilib) NewDriverLibraryDiscoverer(version string, libcudaSoParentDir
 	)
 	discoverers = append(discoverers, driverDotSoSymlinksDiscoverer)
 
-	cudaCompatLibHookDiscoverer := discover.NewCUDACompatHookDiscoverer(l.logger, l.hookCreator, version, "")
+	cudaCompatLibHookDiscoverer := l.discovererFactory.NewCUDACompatHookDiscoverer(version, "")
 	discoverers = append(discoverers, cudaCompatLibHookDiscoverer)
 
-	updateLDCache, _ := discover.NewLDCacheUpdateHook(l.logger, libraries, l.hookCreator, l.ldconfigPath)
+	updateLDCache, _ := l.discovererFactory.NewLDCacheUpdateHook(l.ldconfigPath, libraries)
 	discoverers = append(discoverers, updateLDCache)
 
 	disableDeviceNodeModification := l.hookCreator.Create(DisableDeviceNodeModificationHook)
@@ -131,13 +131,11 @@ func (l *nvcdilib) getVersionSuffixDriverLibraryMounts(version string) (discover
 		return nil, fmt.Errorf("failed to get libraries for driver version: %v", err)
 	}
 
-	mounts := discover.NewMounts(
-		l.logger,
+	mounts := l.discovererFactory.NewMounts(
 		lookup.NewFileLocator(
 			lookup.WithLogger(l.logger),
 			lookup.WithRoot(l.driver.Root),
 		),
-		l.driver.Root,
 		versionSuffixLibraryPaths,
 	)
 
@@ -171,10 +169,8 @@ func (l *nvcdilib) getExplicitDriverLibraryMounts() (discover.Discover, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get driver library locator: %w", err)
 	}
-	mounts := discover.NewMounts(
-		l.logger,
+	mounts := l.discovererFactory.NewMounts(
 		driverLibraryLocator,
-		l.driver.Root,
 		explicitLibraries,
 	)
 
@@ -225,30 +221,26 @@ func getCustomFirmwareClassPath(logger logger.Interface) string {
 }
 
 // NewDriverFirmwareDiscoverer creates a discoverer for GSP firmware associated with the specified driver version.
-func NewDriverFirmwareDiscoverer(logger logger.Interface, driverRoot string, version string) (discover.Discover, error) {
-	gspFirmwareSearchPaths, err := getFirmwareSearchPaths(logger)
+func (l *nvcdilib) newDriverFirmwareDiscoverer(version string) (discover.Discover, error) {
+	gspFirmwareSearchPaths, err := getFirmwareSearchPaths(l.logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get firmware search paths: %v", err)
 	}
 	gspFirmwarePaths := filepath.Join("nvidia", version, "gsp*.bin")
-	return discover.NewMounts(
-		logger,
+	return l.discovererFactory.NewMounts(
 		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
-			lookup.WithRoot(driverRoot),
+			lookup.WithLogger(l.logger),
+			lookup.WithRoot(l.driverRoot),
 			lookup.WithSearchPaths(gspFirmwareSearchPaths...),
 		),
-		driverRoot,
 		[]string{gspFirmwarePaths},
 	), nil
 }
 
 // NewDriverBinariesDiscoverer creates a discoverer for GSP firmware associated with the GPU driver.
-func NewDriverBinariesDiscoverer(logger logger.Interface, driverRoot string) discover.Discover {
-	return discover.NewMounts(
-		logger,
-		lookup.NewExecutableLocator(logger, driverRoot),
-		driverRoot,
+func (l *nvcdilib) NewDriverBinariesDiscoverer() discover.Discover {
+	return l.discovererFactory.NewMounts(
+		lookup.NewExecutableLocator(l.logger, l.driver.Root),
 		[]string{
 			"nvidia-smi",              /* System management interface */
 			"nvidia-debugdump",        /* GPU coredump utility */

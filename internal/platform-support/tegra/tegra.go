@@ -54,15 +54,21 @@ func New(opts ...Option) (discover.Discover, error) {
 		o.resolveSymlink = symlinks.Resolve
 	}
 
-	mountSpecDiscoverer, err := o.newDiscovererFromMountSpecs(o.mountSpecs.MountSpecPathsByType())
+	discovererFactory := discover.NewFactory(
+		discover.WithLogger(o.logger),
+		discover.WithRoot(o.driverRoot),
+		discover.WithDevRoot(o.devRoot),
+		discover.WithHookCreator(o.hookCreator),
+	)
+
+	mountSpecDiscoverer, err := o.newDiscovererFromMountSpecs(discovererFactory, o.mountSpecs.MountSpecPathsByType())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discoverer for mount specs: %v", err)
 	}
 
-	tegraSystemMounts := discover.NewMounts(
-		o.logger,
+	// TODO: This had root set to ""
+	tegraSystemMounts := discovererFactory.NewMounts(
 		lookup.NewFileLocator(lookup.WithLogger(o.logger)),
-		"",
 		[]string{
 			"/etc/nv_tegra_release",
 		},

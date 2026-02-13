@@ -17,7 +17,6 @@
 package discover
 
 import (
-	"github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
 	"github.com/NVIDIA/nvidia-container-toolkit/pkg/lookup"
 )
 
@@ -33,11 +32,11 @@ var ipcMountOptions = []string{
 type ipcMounts mounts
 
 // NewIPCDiscoverer creats a discoverer for NVIDIA IPC sockets.
-func NewIPCDiscoverer(logger logger.Interface, driverRoot string) (Discover, error) {
-	sockets := newMounts(
-		logger,
+func (f *Factory) NewIPCDiscoverer() (Discover, error) {
+	driverRoot := f.root
+	sockets := f.newMounts(
 		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
+			lookup.WithLogger(f.logger),
 			lookup.WithRoot(driverRoot),
 			lookup.WithSearchPaths("/run", "/var/run"),
 			lookup.WithCount(1),
@@ -49,10 +48,9 @@ func NewIPCDiscoverer(logger logger.Interface, driverRoot string) (Discover, err
 		},
 	)
 
-	mps := newMounts(
-		logger,
+	mps := f.newMounts(
 		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
+			lookup.WithLogger(f.logger),
 			lookup.WithRoot(driverRoot),
 			lookup.WithCount(1),
 		),

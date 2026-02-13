@@ -69,7 +69,10 @@ func TestNewNvmlDGPUDiscoverer(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			o := &options{logger: logger}
+			o, _ := new(
+				WithLogger(logger),
+				WithDiscovererFactory(discover.NewFactory(discover.WithLogger(logger))),
+			)
 
 			device, err := devicelib.NewDevice(tc.device)
 			require.NoError(t, err)
@@ -157,6 +160,7 @@ func TestNewNvmlMIGDiscoverer(t *testing.T) {
 			d, err := NewForMigDevice(parent, mig,
 				WithLogger(logger),
 				WithMIGCaps(tc.migCaps),
+				WithDiscovererFactory(discover.NewFactory()),
 			)
 			require.ErrorIs(t, err, tc.expectedError)
 

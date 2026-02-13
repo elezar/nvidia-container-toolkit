@@ -56,13 +56,13 @@ func (l *gatedlib) GetDeviceSpecs() ([]specs.Device, error) {
 func (l *gatedlib) getModeDiscoverer() (discover.Discover, error) {
 	switch l.mode {
 	case ModeGdrcopy:
-		return discover.NewGDRCopyDiscoverer(l.logger, l.devRoot)
+		return l.discovererFactory.NewGDRCopyDiscoverer()
 	case ModeGds:
-		return discover.NewGDSDiscoverer(l.logger, l.driverRoot, l.devRoot)
+		return l.discovererFactory.NewGDSDiscoverer()
 	case ModeMofed:
-		return discover.NewMOFEDDiscoverer(l.logger, l.driverRoot)
+		return l.discovererFactory.NewMOFEDDiscoverer()
 	case ModeNvswitch:
-		return discover.NewNvSwitchDiscoverer(l.logger, l.devRoot)
+		return l.discovererFactory.NewNvSwitchDiscoverer()
 	default:
 		return nil, fmt.Errorf("unrecognized mode")
 	}

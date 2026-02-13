@@ -85,9 +85,7 @@ func (l *imexlib) getChannelIDs(ids ...string) ([]string, error) {
 
 // getAllChannelIDs returns the device IDs for all available IMEX channels.
 func (l *imexlib) getAllChannelIDs() ([]string, error) {
-	channelsDiscoverer := discover.NewCharDeviceDiscoverer(
-		l.logger,
-		l.devRoot,
+	channelsDiscoverer := l.discovererFactory.NewCharDeviceDiscoverer(
 		[]string{"/dev/nvidia-caps-imex-channels/channel*"},
 	)
 

@@ -163,6 +163,7 @@ func (l *fullGPUDeviceSpecGenerator) newFullGPUDiscoverer(d device.Device) (disc
 	deviceNodes, err := dgpu.NewForDevice(d,
 		dgpu.WithDevRoot(l.devRoot),
 		dgpu.WithLogger(l.logger),
+		dgpu.WithDiscovererFactory(l.discovererFactory),
 		dgpu.WithHookCreator(l.hookCreator),
 		dgpu.WithNvsandboxuitilsLib(l.nvsandboxutilslib),
 	)

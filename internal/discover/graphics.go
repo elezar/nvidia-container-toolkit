@@ -36,29 +36,27 @@ import (
 // TODO: The logic for creating DRM devices should be consolidated between this
 // and the logic for generating CDI specs for a single device. This is only used
 // when applying OCI spec modifications to an incoming spec in "legacy" mode.
-func NewDRMNodesDiscoverer(logger logger.Interface, devices image.VisibleDevices, devRoot string, hookCreator HookCreator) (Discover, error) {
-	drmDeviceNodes, err := newDRMDeviceDiscoverer(logger, devices, devRoot)
+func (f *Factory) NewDRMNodesDiscoverer(devices image.VisibleDevices) (Discover, error) {
+	drmDeviceNodes, err := f.newDRMDeviceDiscoverer(devices)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create DRM device discoverer: %v", err)
 	}
 
-	drmByPathSymlinks := newCreateDRMByPathSymlinks(logger, drmDeviceNodes, devRoot, hookCreator)
+	drmByPathSymlinks := f.newCreateDRMByPathSymlinks(drmDeviceNodes)
 
 	discover := Merge(drmDeviceNodes, drmByPathSymlinks)
 	return discover, nil
 }
 
 // NewGraphicsMountsDiscoverer creates a discoverer for the mounts required by graphics tools such as vulkan.
-func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator HookCreator) (Discover, error) {
-	libraries, err := newGraphicsLibrariesDiscoverer(logger, driver, hookCreator)
+func (f *Factory) NewGraphicsMountsDiscoverer() (Discover, error) {
+	libraries, err := f.newGraphicsLibrariesDiscoverer(f.driver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct discoverer for graphics libraries: %w", err)
 	}
 
-	configs := NewMounts(
-		logger,
-		driver.Configs(),
-		driver.Root,
+	configs := f.NewMounts(
+		f.driver.Configs(),
 		[]string{
 			"glvnd/egl_vendor.d/10_nvidia.json",
 			"egl/egl_external_platform.d/15_nvidia_gbm.json",
@@ -72,7 +70,7 @@ func NewGraphicsMountsDiscoverer(logger logger.Interface, driver *root.Driver, h
 	discover := Merge(
 		libraries,
 		configs,
-		newVulkanConfigsDiscover(logger, driver),
+		newVulkanConfigsDiscover(f.logger, f.driver),
 	)
 
 	return discover, nil
@@ -115,7 +113,7 @@ type graphicsDriverLibraries struct {
 
 var _ Discover = (*graphicsDriverLibraries)(nil)
 
-func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver, hookCreator HookCreator) (Discover, error) {
+func (f *Factory) newGraphicsLibrariesDiscoverer(driver *root.Driver) (Discover, error) {
 	cudaVersionPattern, err := driver.Version()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get driver version: %w", err)
@@ -125,10 +123,8 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 		return nil, fmt.Errorf("failed to get libcuda.so parent directory: %w", err)
 	}
 
-	libraries := NewMounts(
-		logger,
+	libraries := f.NewMounts(
 		driver.Libraries(),
-		driver.Root,
 		[]string{
 			// The libnvidia-egl-gbm and libnvidia-egl-wayland libraries do not
 			// have the RM version. Use the *.* pattern to match X.Y.Z versions.
@@ -145,15 +141,13 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 		},
 	)
 
-	xorgLibraries := NewMounts(
-		logger,
+	xorgLibraries := f.NewMounts(
 		lookup.NewFileLocator(
-			lookup.WithLogger(logger),
+			lookup.WithLogger(f.logger),
 			lookup.WithRoot(driver.Root),
 			lookup.WithSearchPaths(buildXOrgSearchPaths(cudaLibRoot)...),
 			lookup.WithCount(1),
 		),
-		driver.Root,
 		[]string{
 			"nvidia_drv.so",
 			"libglxserver_nvidia.so." + cudaVersionPattern,
@@ -161,9 +155,9 @@ func newGraphicsLibrariesDiscoverer(logger logger.Interface, driver *root.Driver
 	)
 
 	return &graphicsDriverLibraries{
+		logger:      f.logger,
 		Discover:    Merge(libraries, xorgLibraries),
-		logger:      logger,
-		hookCreator: hookCreator,
+		hookCreator: f.hookCreator,
 	}, nil
 }
 
@@ -279,11 +273,11 @@ type drmDevicesByPath struct {
 }
 
 // newCreateDRMByPathSymlinks creates a discoverer for a hook to create the by-path symlinks for DRM devices discovered by the specified devices discoverer
-func newCreateDRMByPathSymlinks(logger logger.Interface, devices Discover, devRoot string, hookCreator HookCreator) Discover {
+func (f *Factory) newCreateDRMByPathSymlinks(devices Discover) Discover {
 	d := drmDevicesByPath{
-		logger:      logger,
-		hookCreator: hookCreator,
-		devRoot:     devRoot,
+		logger:      f.logger,
+		hookCreator: f.hookCreator,
+		devRoot:     f.devRoot,
 		devicesFrom: devices,
 	}
 
@@ -347,24 +341,22 @@ func (d drmDevicesByPath) getSpecificLinkArgs(devices []Device) ([]string, error
 }
 
 // newDRMDeviceDiscoverer creates a discoverer for the DRM devices associated with the requested devices.
-func newDRMDeviceDiscoverer(logger logger.Interface, devices image.VisibleDevices, devRoot string) (Discover, error) {
-	allDevices := NewCharDeviceDiscoverer(
-		logger,
-		devRoot,
+func (f *Factory) newDRMDeviceDiscoverer(devices image.VisibleDevices) (Discover, error) {
+	allDevices := f.NewCharDeviceDiscoverer(
 		[]string{
 			"/dev/dri/card*",
 			"/dev/dri/renderD*",
 		},
 	)
 
-	filter, err := newDRMDeviceFilter(devices, devRoot)
+	filter, err := newDRMDeviceFilter(devices, f.devRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct DRM device filter: %v", err)
 	}
 
 	// We return a discoverer that applies the DRM device filter created above to all discovered DRM device nodes.
 	d := newFilteredDiscoverer(
-		logger,
+		f.logger,
 		allDevices,
 		filter,
 	)

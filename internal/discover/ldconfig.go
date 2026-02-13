@@ -25,10 +25,10 @@ import (
 )
 
 // NewLDCacheUpdateHook creates a discoverer that updates the ldcache for the specified mounts. A logger can also be specified
-func NewLDCacheUpdateHook(logger logger.Interface, mounts Discover, hookCreator HookCreator, ldconfigPath string) (Discover, error) {
+func (f *Factory) NewLDCacheUpdateHook(ldconfigPath string, mounts Discover) (Discover, error) {
 	d := ldconfig{
-		logger:       logger,
-		hookCreator:  hookCreator,
+		logger:       f.logger,
+		hookCreator:  f.hookCreator,
 		ldconfigPath: ldconfigPath,
 		mountsFrom:   mounts,
 	}

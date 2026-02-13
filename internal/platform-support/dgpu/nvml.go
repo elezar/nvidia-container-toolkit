@@ -51,9 +51,7 @@ func (o *options) newNvmlDGPUDiscoverer(d requiredInfo) (discover.Discover, erro
 
 	deviceNodePaths := append([]string{path}, drmDeviceNodes...)
 
-	deviceNodes := discover.NewCharDeviceDiscoverer(
-		o.logger,
-		o.devRoot,
+	deviceNodes := o.discovererFactory.NewCharDeviceDiscoverer(
 		deviceNodePaths,
 	)
 
@@ -104,9 +102,7 @@ func (o *options) newNvmlMigDiscoverer(d requiredMigInfo) (discover.Discover, er
 		return nil, err
 	}
 
-	deviceNodes := discover.NewCharDeviceDiscoverer(
-		o.logger,
-		o.devRoot,
+	deviceNodes := o.discovererFactory.NewCharDeviceDiscoverer(
 		[]string{
 			parentPath,
 			giCapDevicePath,

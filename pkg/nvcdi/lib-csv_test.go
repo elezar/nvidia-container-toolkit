@@ -190,9 +190,14 @@ func TestDeviceSpecGenerators(t *testing.T) {
 		tc.lib.hookCreator = discover.NewHookCreator()
 
 		tc.lib.devicelib = device.New(tc.lib.nvmllib)
-
-		tc.lib.driverRoot = driverRoot
 		tc.lib.devRoot = driverRoot
+		tc.lib.driverRoot = driverRoot
+		tc.lib.discovererFactory = discover.NewFactory(
+			discover.WithLogger(tc.lib.logger),
+			discover.WithHookCreator(tc.lib.hookCreator),
+			discover.WithRoot(driverRoot),
+		)
+
 		tc.lib.csvFiles = []string{
 			filepath.Join(driverRoot, "/etc/nvidia-container-runtime/host-files-for-container.d/devices.csv"),
 			filepath.Join(driverRoot, "/etc/nvidia-container-runtime/host-files-for-container.d/drivers.csv"),

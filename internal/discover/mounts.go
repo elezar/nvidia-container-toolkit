@@ -39,14 +39,14 @@ type mounts struct {
 var _ Discover = (*mounts)(nil)
 
 // NewMounts creates a discoverer for the required mounts using the specified locator.
-func NewMounts(logger logger.Interface, lookup lookup.Locator, root string, required []string) Discover {
-	return WithCache(newMounts(logger, lookup, root, required))
+func (f *Factory) NewMounts(lookup lookup.Locator, required []string) Discover {
+	return WithCache(f.newMounts(lookup, f.driver.Root, required))
 }
 
 // newMounts creates a discoverer for the required mounts using the specified locator.
-func newMounts(logger logger.Interface, lookup lookup.Locator, root string, required []string) *mounts {
+func (f *Factory) newMounts(lookup lookup.Locator, root string, required []string) *mounts {
 	return &mounts{
-		logger:   logger,
+		logger:   f.logger,
 		lookup:   lookup,
 		root:     filepath.Join("/", root),
 		required: required,

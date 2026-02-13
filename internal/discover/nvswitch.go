@@ -16,13 +16,9 @@
 
 package discover
 
-import "github.com/NVIDIA/nvidia-container-toolkit/internal/logger"
-
 // NewNvSwitchDiscoverer creates a discoverer for NVSWITCH devices.
-func NewNvSwitchDiscoverer(logger logger.Interface, devRoot string) (Discover, error) {
-	devices := NewCharDeviceDiscoverer(
-		logger,
-		devRoot,
+func (f *Factory) NewNvSwitchDiscoverer() (Discover, error) {
+	devices := f.NewCharDeviceDiscoverer(
 		[]string{
 			"/dev/nvidia-nvswitchctl",
 			"/dev/nvidia-nvswitch*",

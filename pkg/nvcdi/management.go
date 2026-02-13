@@ -95,9 +95,7 @@ type managementDiscoverer struct {
 // newManagementDeviceDiscoverer returns a discover.Discover that discovers device nodes for use in managementlib containers.
 // NVML is not used to query devices and all device nodes are returned.
 func (m *managementlib) newManagementDeviceDiscoverer() (discover.Discover, error) {
-	deviceNodes := discover.NewCharDeviceDiscoverer(
-		m.logger,
-		m.devRoot,
+	deviceNodes := m.discovererFactory.NewCharDeviceDiscoverer(
 		[]string{
 			"/dev/nvidia*",
 			"/dev/nvidia-caps/nvidia-cap*",

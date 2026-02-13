@@ -228,7 +228,12 @@ func TestDrmDevicesByPath(t *testing.T) {
 		}
 
 		t.Run(tc.description, func(t *testing.T) {
-			d := newCreateDRMByPathSymlinks(logger, tc.devices, devRoot, hookCreator)
+			f := NewFactory(
+				WithLogger(logger),
+				WithHookCreator(hookCreator),
+				WithDevRoot(devRoot),
+			)
+			d := f.newCreateDRMByPathSymlinks(tc.devices)
 
 			devices, err := d.Devices()
 			require.NoError(t, err)

@@ -408,7 +408,7 @@ func (l *csvlib) driverDiscoverer() (discover.Discover, error) {
 
 	cudaCompatDiscoverer := l.cudaCompatDiscoverer()
 
-	ldcacheUpdateHook, err := discover.NewLDCacheUpdateHook(l.logger, driverDiscoverer, l.hookCreator, l.ldconfigPath)
+	ldcacheUpdateHook, err := l.discovererFactory.NewLDCacheUpdateHook(l.ldconfigPath, driverDiscoverer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ldcache update hook discoverer: %w", err)
 	}
@@ -472,5 +472,5 @@ func (l *csvlib) cudaCompatDiscoverer() discover.Discover {
 		}
 	}
 
-	return discover.NewCUDACompatHookDiscoverer(l.logger, l.hookCreator, version, cudaCompatContainerRoot)
+	return l.discovererFactory.NewCUDACompatHookDiscoverer(version, cudaCompatContainerRoot)
 }
