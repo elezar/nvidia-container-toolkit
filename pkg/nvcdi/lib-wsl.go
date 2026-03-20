@@ -27,7 +27,15 @@ type wsllib nvcdilib
 
 var _ deviceSpecGeneratorFactory = (*wsllib)(nil)
 
-func (l *wsllib) DeviceSpecGenerators(...string) (DeviceSpecGenerator, error) {
+func (l *wsllib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error) {
+	for _, id := range ids {
+		switch id {
+		case "all":
+		case "0":
+		default:
+			return nil, fmt.Errorf("unsupported device id: %v", id)
+		}
+	}
 	return l, nil
 }
 
