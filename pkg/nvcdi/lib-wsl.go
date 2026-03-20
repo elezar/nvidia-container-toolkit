@@ -39,7 +39,7 @@ func (l *wsllib) DeviceSpecGenerators(ids ...string) (DeviceSpecGenerator, error
 	return l, nil
 }
 
-// GetDeviceSpecs returns the CDI device specs for a single all device.
+// GetDeviceSpecs returns the CDI device specs for a single device with name "0".
 func (l *wsllib) GetDeviceSpecs() ([]specs.Device, error) {
 	device := l.newDXGDeviceDiscoverer()
 	deviceEdits, err := l.editsFactory.FromDiscoverer(device)
@@ -48,7 +48,7 @@ func (l *wsllib) GetDeviceSpecs() ([]specs.Device, error) {
 	}
 
 	deviceSpec := specs.Device{
-		Name:           "all",
+		Name:           "0",
 		ContainerEdits: *deviceEdits.ContainerEdits,
 	}
 
