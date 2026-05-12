@@ -68,12 +68,14 @@ func TestLocate(t *testing.T) {
 				WithDriverRoot(driverRoot),
 			)
 
-			driverLibraryPath, err := l.GetDriverLibDirectory()
-			require.ErrorIs(t, err, tc.expectedError)
+			driverLibraryPath, err := l.GetDriverLibDirectories()
+			if tc.expectedError != nil {
+				require.ErrorIs(t, err, tc.expectedError)
+				return
+			}
 
 			// NOTE: We need to strip `/private` on MacOs due to symlink resolution
-			stripped := strings.TrimPrefix(driverLibraryPath, "/private")
-
+			stripped := strings.TrimPrefix(driverLibraryPath[0], "/private")
 			require.Equal(t, tc.expected, stripped)
 		})
 	}
